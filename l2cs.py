@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 '''
-Need handlers for:
-Prefix
 
-Need magic for:
+Bonus magic:
 dates/datewords to timestamps?
 
-Need to restrict out (sanely):
-Wildcards (non-prefix)
-
 Add support for pushing schema into place, to allow pre-fixing "bad" fields
+set all field names to lowercase (as plugin)?
 
 '''
 
