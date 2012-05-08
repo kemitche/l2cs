@@ -39,6 +39,16 @@ TESTS = [
          ]
 
 
+class l2csTester(unittest.TestCase):
+    
+    def setUp(self):
+        self.parser = l2cs.make_parser(int_fields=["count", "number"],
+                                       yesno_fields=["is_active", "is_ready"])
+    
+    def tearDown(self):
+        self.parser = None
+
+
 def run_tests():
     '''because why bother with the stdlib testing library, anyway?'''
     for input_, output in TESTS:
@@ -51,3 +61,6 @@ def run_tests():
             print "\tnope:", result, "!=", output
             raise
         print "\tyup!"
+
+if __name__ == '__main__':
+    unittest.main()
