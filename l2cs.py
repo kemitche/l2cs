@@ -16,7 +16,6 @@ Need handlers for:
 Prefix
 
 Need magic for:
-yes/no's to integer fields
 dates/datewords to timestamps?
 
 Need to restrict out (sanely):
@@ -39,22 +38,23 @@ def handler(classes):
 
 @handler((whoosh.query.Term, whoosh.query.Phrase))
 def build_field(clause):
-    int_field = getattr(clause, "integer_field", False)
-    yield "(field "
-    yield clause.fieldname
-    yield " "
-    if not int_field:
-        yield "'"
-    if isinstance(clause, whoosh.query.Term):
+    integer_field = getattr(clause, "integer_field", False)
+    if not integer_field:
+        yield "(field "
+        yield clause.fieldname
+        yield " '"
+        if isinstance(clause, whoosh.query.Term):
+            yield clause.text
+        elif isinstance(clause, whoosh.query.Phrase):
+            for word in clause.words[:-1]:
+                yield word
+                yield " "
+            yield clause.words[-1]
+        yield "')"
+    else:
+        yield clause.fieldname
+        yield ':'
         yield clause.text
-    elif isinstance(clause, whoosh.query.Phrase):
-        for word in clause.words[:-1]:
-            yield word
-            yield " "
-        yield clause.words[-1]
-    if not int_field:
-        yield "'"
-    yield ")"
 
 
 @handler((whoosh.query.And, whoosh.query.Or, whoosh.query.Not))
@@ -87,27 +87,38 @@ def walk_clause(clause):
 
 
 class IntNode(whoosh.qparser.syntax.WordNode):
-    integer_field = True
     def __init__(self, value):
         self.__int_value = int(value)
         whoosh.qparser.syntax.WordNode.__init__(self, str(self.__int_value))
+    
+    def query(self, parser):
+        q = whoosh.qparser.syntax.WordNode.query(self, parser)
+        q.integer_field = True
+        return q
 
 
 class IntNodePlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
     def __init__(self, fieldnames):
-        mapping = dict.fromkeys(fieldnames, self.modify_node)
+        mapping = {}
+        for name in fieldnames:
+            function = self.modify_node_fn(name, self.modify_node)
+            mapping[name] = function
         super(IntNodePlugin, self).__init__(mapping)
     
     @staticmethod
-    def modify_node(node):
-        print "INP handling", node
-        import pdb; pdb.set_trace()
+    def modify_node_fn(fname, base_fn):
+        def fn(node):
+            return base_fn(fname, node)
+        return fn
+    
+    @staticmethod
+    def modify_node(fieldname, node):
         if node.has_text:
             try:
-                print 'returning', IntNode(node.text)
-                return IntNode(node.text)
-            except ValueError as e:
-                print 'failing! ', e
+                new_node = IntNode(node.text)
+                new_node.set_fieldname(fieldname)
+                return new_node
+            except ValueError:
                 return None
         else:
             return node
@@ -115,17 +126,15 @@ class IntNodePlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
 
 class YesNoPlugin(IntNodePlugin):
     @staticmethod
-    def modify_node(node):
-        print "YNP handling", node
+    def modify_node(fieldname, node):
         if node.has_text:
             if node.text in ("yes", "y", "1"):
-                print "returning", IntNode(1)
-                return IntNode(1)
+                new_node = IntNode(1)
             else:
-                print "returning", IntNode(0)
-                return IntNode(0)
+                new_node = IntNode(0)
+            new_node.set_fieldname(fieldname)
+            return new_node
         else:
-            print "returning", node
             return node
 
 
