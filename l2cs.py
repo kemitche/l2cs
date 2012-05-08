@@ -44,10 +44,10 @@ def build_field(clause):
         yield clause.fieldname
         yield " '"
         if isinstance(clause, whoosh.query.Term):
-            yield clause.text
+            yield clause.text.replace(r"'", r"\'")
         elif isinstance(clause, whoosh.query.Phrase):
             for word in clause.words[:-1]:
-                yield word
+                yield word.replace(r"'", r"\'")
                 yield " "
             yield clause.words[-1]
         yield "')"
@@ -165,55 +165,19 @@ def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
     return parser
 
 
-def convert(query):
-    parser = make_parser()
+def convert(query, **kw):
+    parser = make_parser(**kw)
     parsed = parser.parse(query)
     pieces = walk_clause(parsed)
     return ''.join(pieces)
 
 
-TESTS = [
-         # basic fields
-         ("foo", "(field text 'foo')"),
-         ("foo:bar", "(field foo 'bar')"),
-         
-         # phrases
-         ('"foo bar baz"', "(field text 'foo bar baz')"),
-         
-         # AND clauses
-         ("foo AND bar", "(and (field text 'foo') (field text 'bar'))"),
-         ("foo AND bar:baz", "(and (field text 'foo') (field bar 'baz'))"),
-         
-         # OR clauses
-         ("foo OR bar", "(or (field text 'foo') (field text 'bar'))"),
-         ("bar:baz OR foo", "(or (field bar 'baz') (field text 'foo'))"),
-         
-         # NOT clauses
-         ("NOT foo", "(not (field text 'foo'))"),
-         ("baz NOT bar", "(and (field text 'baz') (not (field text 'bar')))"),
-         ("foo:bar NOT foo:baz", "(and (field foo 'bar') (not (field foo 'baz')))"),
-         ("bar AND foo:-baz", )
-         ]
-
-
-def run_tests():
-    '''because why bother with the stdlib testing library, anyway?'''
-    for input_, output in TESTS:
-        print input_, 'becomes', output, "? ... "
-        result = convert(input_)
-        try:
-            assert result == output
-        except AssertionError:
-            print "\tnope:", result
-            raise
-        print "\tyup!"
-
-
 def main(args):
-    '''For command line testing'''
+    '''For command line experimentation'''
     query = ' '.join(args[1:])
     print "Lucene input:", query
-    parser = make_parser()
+    parser = make_parser(int_fields=["count", "number"],
+                         yesno_fields=["is_active", "is_ready"])
     parsed = parser.parse(query)
     print "Parsed representation:", repr(parsed)
     print "Lucene form:", str(parsed)
@@ -222,7 +186,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == '--test':
-        run_tests()
-    else:
-        main(sys.argv)
+    main(sys.argv)
