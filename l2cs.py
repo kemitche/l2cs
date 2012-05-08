@@ -1,16 +1,4 @@
 #!/usr/bin/env python
-
-import sys
-
-import whoosh.qparser
-import whoosh.qparser.plugins
-import whoosh.qparser.syntax
-import whoosh.query
-
-
-HANDLERS = {}
-
-
 '''
 Need handlers for:
 Prefix
@@ -25,6 +13,16 @@ Add support for pushing schema into place, to allow pre-fixing "bad" fields
 
 '''
 
+import sys
+
+import whoosh.qparser
+import whoosh.qparser.plugins
+import whoosh.qparser.syntax
+import whoosh.query
+
+
+HANDLERS = {}
+
 
 def handler(classes):
     def decorator(fn):
@@ -36,7 +34,7 @@ def handler(classes):
     return decorator
 
 
-@handler((whoosh.query.Term, whoosh.query.Phrase))
+@handler((whoosh.query.Term, whoosh.query.Phrase, whoosh.query.Prefix))
 def build_field(clause):
     integer_field = getattr(clause, "integer_field", False)
     if not integer_field:
@@ -45,6 +43,9 @@ def build_field(clause):
         yield " '"
         if isinstance(clause, whoosh.query.Term):
             yield clause.text.replace(r"'", r"\'")
+        elif isinstance(clause, whoosh.query.Prefix):
+            yield clause.text.replace(r"'", r"\'")
+            yield '*'
         elif isinstance(clause, whoosh.query.Phrase):
             for word in clause.words[:-1]:
                 yield word.replace(r"'", r"\'")
@@ -142,6 +143,7 @@ DEFAULT_PLUGINS = (
                    whoosh.qparser.plugins.WhitespacePlugin(),
                    whoosh.qparser.plugins.SingleQuotePlugin(),
                    whoosh.qparser.plugins.FieldsPlugin(),
+                   whoosh.qparser.plugins.PhrasePlugin(),
                    whoosh.qparser.plugins.PrefixPlugin(),
                    whoosh.qparser.plugins.GroupPlugin(),
                    whoosh.qparser.plugins.OperatorsPlugin(AndMaybe=None,
@@ -154,13 +156,9 @@ DEFAULT_PLUGINS = (
 def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
                 int_fields=None, yesno_fields=None):
     parser = whoosh.qparser.QueryParser(default_field, schema, plugins=plugins)
-    if int_fields is None:
-        parser.add_plugin(IntNodePlugin(["count", "number"]))
-    else:
+    if int_fields:
         parser.add_plugin(IntNodePlugin(int_fields))
-    if yesno_fields is None:
-        parser.add_plugin(YesNoPlugin(["is_active", "is_ready"]))
-    else:
+    if yesno_fields:
         parser.add_plugin(YesNoPlugin(yesno_fields))
     return parser
 
@@ -177,7 +175,7 @@ def main(args):
     query = ' '.join(args[1:])
     print "Lucene input:", query
     parser = make_parser(int_fields=["count", "number"],
-                         yesno_fields=["is_active", "is_ready"])
+                         yesno_fields=["active", "ready"])
     parsed = parser.parse(query)
     print "Parsed representation:", repr(parsed)
     print "Lucene form:", str(parsed)
