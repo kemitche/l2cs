@@ -8,13 +8,15 @@ import l2cs
 class l2csTester(unittest.TestCase):
     def setUp(self):
         self.parser = l2cs.make_parser(int_fields=["count", "number"],
-                                       yesno_fields=["active", "ready"])
+                                       yesno_fields=["active", "ready"],
+                                       aliases={"alias": ["alias1", "alias2"]})
     
     def tearDown(self):
         self.parser = None
     
-    def _run_test(self, input_, expected):
-        parsed = self.parser.parse(input_)
+    def _run_test(self, input_, expected, parser=None):
+        parser = parser or self.parser
+        parsed = parser.parse(input_)
         pieces = l2cs.walk_clause(parsed)
         result = ''.join(pieces)
         errmsg = ("\ninput: %s\nparsed: %s\nresult: %s\nexpected: %s" %
@@ -47,9 +49,9 @@ class l2csTester(unittest.TestCase):
     def test_not1(self):
         self._run_test("NOT foo", "(not (field text 'foo'))")
     def test_not2(self):
-        self._run_test("baz NOT bar", "(or (field text 'baz') (not (field text 'bar')))")
+        self._run_test("baz NOT bar", "(and (field text 'baz') (not (field text 'bar')))")
     def test_not3(self):
-        self._run_test("foo:bar NOT foo:baz", "(or (field foo 'bar') (not (field foo 'baz')))")
+        self._run_test("foo:bar NOT foo:baz", "(and (field foo 'bar') (not (field foo 'baz')))")
     def test_not4(self):
         self._run_test("bar AND foo:-baz", "(and (field text 'bar') (not (field text 'baz')))")
     
@@ -63,15 +65,22 @@ class l2csTester(unittest.TestCase):
     def test_int1(self):
         self._run_test("count:12", "count:12")
     def test_int2(self):
-        self._run_test("count:foo number:12 foo:bar", "(or number:12 (field foo 'bar'))")
+        self._run_test("count:foo number:12 foo:bar", "(and number:12 (field foo 'bar'))")
     
     # yes/no fields
     def test_yesno1(self):
-        self._run_test("ready:yes active:n", "(or ready:1 active:0)")
+        self._run_test("ready:yes active:n", "(and ready:1 active:0)")
     
     # prefixes
     def test_prefix1(self):
         self._run_test("foo:bar*", "(field foo 'bar*')")
+    
+    # Aliases
+    def test_alias1(self):
+        self._run_test("alias1:foo", "(field alias 'foo')")
+    def test_alias2(self):
+        '''Make sure the reference the base of the alias still works'''
+        self._run_test("alias:foo", "(field alias 'foo')")
 
 
 if __name__ == '__main__':

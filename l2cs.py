@@ -94,13 +94,13 @@ class IntNode(whoosh.qparser.syntax.WordNode):
         return q
 
 
-class IntNodePlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
+class PseudoFieldPlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
     def __init__(self, fieldnames):
         mapping = {}
         for name in fieldnames:
             function = self.modify_node_fn(name, self.modify_node)
             mapping[name] = function
-        super(IntNodePlugin, self).__init__(mapping)
+        super(PseudoFieldPlugin, self).__init__(mapping)
     
     @staticmethod
     def modify_node_fn(fname, base_fn):
@@ -108,8 +108,12 @@ class IntNodePlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
             return base_fn(fname, node)
         return fn
     
-    @staticmethod
-    def modify_node(fieldname, node):
+    def modify_node(self, fieldname, node):
+        raise NotImplementedError
+
+
+class IntNodePlugin(PseudoFieldPlugin):
+    def modify_node(self, fieldname, node):
         if node.has_text:
             try:
                 new_node = IntNode(node.text)
@@ -121,9 +125,8 @@ class IntNodePlugin(whoosh.qparser.plugins.PseudoFieldPlugin):
             return node
 
 
-class YesNoPlugin(IntNodePlugin):
-    @staticmethod
-    def modify_node(fieldname, node):
+class YesNoPlugin(PseudoFieldPlugin):
+    def modify_node(self, fieldname, node):
         if node.has_text:
             if node.text in ("yes", "y", "1"):
                 new_node = IntNode(1)
@@ -133,6 +136,57 @@ class YesNoPlugin(IntNodePlugin):
             return new_node
         else:
             return node
+
+
+class FieldAliasPlugin(PseudoFieldPlugin):
+    def __init__(self, aliases):
+        reverse_aliases = {}
+        for fieldname, alias_list in aliases.items():
+            for alias in alias_list:
+                reverse_aliases[alias] = fieldname
+        self.aliases = reverse_aliases
+        super(FieldAliasPlugin, self).__init__(self.aliases.keys())
+    
+    def modify_node(self, fieldname, node):
+        if node.has_text:
+            node.set_fieldname(self.aliases[fieldname])
+        return node
+
+
+class PlusMinusPlugin(whoosh.qparser.plugins.PlusMinusPlugin):
+    '''The default PlusMinus plugin doesn't respect the parser's
+    default grouping, instead blindly using "OR" groupings. This modified
+    version takes the parser's desired grouping into account
+    '''
+    def do_plusminus(self, parser, group):
+        '''This filter sorts nodes in a flat group into "required", "default",
+        and "banned" subgroups based on the presence of plus and minus nodes.
+        '''
+        required = whoosh.qparser.syntax.AndGroup()
+        banned = whoosh.qparser.syntax.OrGroup()
+        default = parser.group()
+
+        # Which group to put the next node we see into
+        next_ = default
+        for node in group:
+            if isinstance(node, self.Plus):
+                # +: put the next node in the required group
+                next_ = required
+            elif isinstance(node, self.Minus):
+                # -: put the next node in the banned group
+                next_ = banned
+            else:
+                # Anything else: put it in the appropriate group
+                next_.append(node)
+                # Reset to putting things in the optional group by default
+                next_ = default
+
+        group = default
+        if required:
+            group = whoosh.qparser.syntax.AndMaybeGroup([required, group])
+        if banned:
+            group = whoosh.qparser.syntax.AndNotGroup([group, banned])
+        return group
 
 
 DEFAULT_PLUGINS = (
@@ -145,33 +199,39 @@ DEFAULT_PLUGINS = (
                    whoosh.qparser.plugins.OperatorsPlugin(AndMaybe=None,
                                                           Require=None),
                    whoosh.qparser.plugins.EveryPlugin(),
-                   whoosh.qparser.plugins.PlusMinusPlugin(),
+                   PlusMinusPlugin(),
                    )
 
 
 def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
-                int_fields=None, yesno_fields=None):
+                int_fields=None, yesno_fields=None, aliases=None):
     parser = whoosh.qparser.QueryParser(default_field, schema, plugins=plugins)
     if int_fields:
         parser.add_plugin(IntNodePlugin(int_fields))
     if yesno_fields:
         parser.add_plugin(YesNoPlugin(yesno_fields))
+    if aliases:
+        parser.add_plugin(FieldAliasPlugin(aliases))
     return parser
 
 
-def convert(query, **kw):
-    parser = make_parser(**kw)
+def convert(query, parser):
     parsed = parser.parse(query)
     pieces = walk_clause(parsed)
     return ''.join(pieces)
+
+
+def __sample_parser():
+    return make_parser(int_fields=["count", "number"],
+                       yesno_fields=["active", "ready"],
+                       aliases={"alias": ["alias1", "alias2"]})
 
 
 def main(args):
     '''For command line experimentation'''
     query = ' '.join(args[1:])
     print "Lucene input:", query
-    parser = make_parser(int_fields=["count", "number"],
-                         yesno_fields=["active", "ready"])
+    parser = __sample_parser()
     parsed = parser.parse(query)
     print "Parsed representation:", repr(parsed)
     print "Lucene form:", str(parsed)
