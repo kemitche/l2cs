@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='l2cs',
-    version="0.1",
+    version="0.1.0",
     install_requires=["whoosh"],
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
