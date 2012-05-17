@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 '''
-
-Bonus magic:
-dates/datewords to timestamps?
-
-Add support for pushing schema into place, to allow pre-fixing "bad" fields
-set all field names to lowercase (as plugin)?
-
+l2cs (lucene to CloudSearch) - is a module for converting search queries
+from Apache lucene's base syntax
+(http://lucene.apache.org/core/3_6_0/queryparsersyntax.html)
+into an Amazon CloudSearch boolean query
+(http://docs.amazonwebservices.com/cloudsearch/latest/developerguide/booleansearch.html).
 '''
 
 import sys
