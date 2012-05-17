@@ -1,0 +1,13 @@
+Source: l2cs
+Maintainer: Keith Mitchell <kemitche@reddit.com>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7)
+Standards-Version: 3.9.1
+
+Package: python-l2cs
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Breaks: ${python:Breaks}
+Description: Converts queries from Lucene to Amazon CloudSearch syntax
+
