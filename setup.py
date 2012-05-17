@@ -13,7 +13,7 @@ setup(
     author='Keith Mitchell',
     author_email='kemitche@reddit.com',
     description=("Rewrites queries from lucene syntax to"
-                 "Amazon Cloudsearch syntax")
+                 "Amazon Cloudsearch syntax"),
     license='BSD',
     url="http://github.com/kemitche/l2cs",
     install_requires=["whoosh"],
