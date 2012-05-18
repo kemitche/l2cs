@@ -1,2 +1,3 @@
 *.pyc
 *.egg-info
+deb_dist/
