@@ -1,3 +1,15 @@
+This package was debianized by Keith Mitchell <kemitche@reddit.com>
+5/18/2012
+
+It was downloaded from: http://github.com/kemitche/l2cs
+
+Upstream Author(s): Keith Mitchell <kemitche@reddit.com>
+
+Copyright:
+        Copyright (C) 2012 by Keith Mitchell <kemitche@reddit.com>
+
+License:
+
 Copyright 2012 Keith Mitchell. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -21,3 +33,7 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Packaging:
+        Copyright (C) 2012 by Keith Mitchell <kemitche@reddit.com>
+        released under the BSD 2-Clause license.
