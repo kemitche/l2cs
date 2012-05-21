@@ -19,4 +19,5 @@ setup(
     install_requires=["whoosh"],
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
+    test_suite="test_l2cs",
 )
