@@ -21,7 +21,7 @@ __version__ = "0.1.0"
 HANDLERS = {}
 
 
-def handler(classes):
+def handler(*classes):
     def decorator(fn):
         for cls in classes:
             if cls in HANDLERS:
@@ -31,7 +31,7 @@ def handler(classes):
     return decorator
 
 
-@handler((whoosh.query.Term, whoosh.query.Phrase, whoosh.query.Prefix))
+@handler(whoosh.query.Term, whoosh.query.Phrase, whoosh.query.Prefix)
 def build_field(clause):
     integer_field = getattr(clause, "integer_field", False)
     if not integer_field:
@@ -55,7 +55,7 @@ def build_field(clause):
         yield clause.text
 
 
-@handler((whoosh.query.And, whoosh.query.Or, whoosh.query.Not))
+@handler(whoosh.query.And, whoosh.query.Or, whoosh.query.Not)
 def build_grouper(clause):
     yield "("
     yield clause.__class__.__name__.lower()
@@ -66,7 +66,7 @@ def build_grouper(clause):
     yield ")"
 
 
-@handler((whoosh.query.AndNot,))
+@handler(whoosh.query.AndNot)
 def build_compound(clause):
     yield '(and '
     use, avoid = list(clause.children())
