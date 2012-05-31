@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='l2cs',
-    version="0.1.0",
+    version="0.1.1",
     author='Keith Mitchell',
     author_email='kemitche@reddit.com',
     description=("Rewrites queries from lucene syntax to"
@@ -17,7 +17,7 @@ setup(
     license='BSD',
     url="http://github.com/kemitche/l2cs",
     install_requires=["whoosh"],
-    packages=find_packages(exclude=['ez_setup']),
+    py_modules=['l2cs'],
     include_package_data=True,
     test_suite="test_l2cs",
 )

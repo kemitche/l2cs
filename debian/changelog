@@ -1,3 +1,15 @@
+l2cs (0.1.1-2) natty; urgency=low
+
+  * Package was missing l2cs.py
+
+ -- Keith Mitchell <kemitche@reddit.com>  Thu, 31 May 2012 10:22:34 -0700
+
+l2cs (0.1.1-1) natty; urgency=low
+
+  * Internal changes
+
+ -- Keith Mitchell <kemitche@reddit.com>  Wed, 30 May 2012 17:16:11 -0700
+
 l2cs (0.1.0-1) natty; urgency=low
 
   * source package automatically created by stdeb 0.6.0+git
