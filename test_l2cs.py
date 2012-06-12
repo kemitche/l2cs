@@ -79,8 +79,14 @@ class l2csTester(unittest.TestCase):
     def test_alias1(self):
         self._run_test("alias1:foo", "(field alias 'foo')")
     def test_alias2(self):
-        '''Make sure the reference the base of the alias still works'''
+        '''Make sure that referencing the base of the alias still works'''
         self._run_test("alias:foo", "(field alias 'foo')")
+    
+    # Unsupported "+" syntax gets ignored, AndMaybe clauses are avoided
+    def test_plus1(self):
+        self._run_test("learn c++ programming", "(and (field text 'learn') (field text 'c++') (field text 'programming'))")
+    def test_plus2(self):
+        self._run_test("learn c++", "(and (field text 'learn') (field text 'c++'))")
 
 
 if __name__ == '__main__':

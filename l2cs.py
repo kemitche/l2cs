@@ -12,6 +12,7 @@ import sys
 import whoosh.qparser
 import whoosh.qparser.plugins
 import whoosh.qparser.syntax
+import whoosh.qparser.taggers
 import whoosh.query
 
 
@@ -55,10 +56,17 @@ def build_field(clause):
         yield clause.text
 
 
-@handler(whoosh.query.And, whoosh.query.Or, whoosh.query.Not)
+@handler(whoosh.query.And, whoosh.query.Or, whoosh.query.Not,
+         whoosh.query.AndMaybe)
 def build_grouper(clause):
     yield "("
-    yield clause.__class__.__name__.lower()
+    # CloudSearch only supports 'and' and 'or' clauses; neither really fit
+    # with the concept of "AndMaybe", which tries to "boost" results that
+    # include the "Maybe" portion of the clause.
+    if isinstance(clause, whoosh.query.AndMaybe):
+        yield "and"
+    else:
+        yield clause.__class__.__name__.lower()
     for child_clause in clause.children():
         yield " "
         for piece in walk_clause(child_clause):
@@ -154,40 +162,46 @@ class FieldAliasPlugin(PseudoFieldPlugin):
         return node
 
 
-class PlusMinusPlugin(whoosh.qparser.plugins.PlusMinusPlugin):
-    '''The default PlusMinus plugin doesn't respect the parser's
-    default grouping, instead blindly using "OR" groupings. This modified
-    version takes the parser's desired grouping into account
+class MinusPlugin(whoosh.qparser.plugins.Plugin):
+    '''This differs from whoosh's PlusMinusPlugin. The concept of "AndMaybe"
+    isn't one that applies to CloudSearch, so "+" actions aren't needed.
+    Additionally, the logic is simplified from the whoosh version to just
+    swap out the nodes
     '''
-    def do_plusminus(self, parser, group):
+    class Minus(whoosh.qparser.syntax.MarkerNode):
+        pass
+    
+    def __init__(self, minusexpr="-"):
+        self.minusexpr = minusexpr
+
+    def taggers(self, parser):
+        minus_tagger = whoosh.qparser.taggers.FnTagger(self.minusexpr,
+                                                       self.Minus,
+                                                       "minus")
+        return [(minus_tagger, 0)]
+    
+    def filters(self, parser):
+        return [(self.do_minus, 505)]
+    
+    def do_minus(self, parser, group):
         '''This filter sorts nodes in a flat group into "required", "default",
         and "banned" subgroups based on the presence of plus and minus nodes.
         '''
-        required = whoosh.qparser.syntax.AndGroup()
-        banned = whoosh.qparser.syntax.OrGroup()
-        default = parser.group()
-
-        # Which group to put the next node we see into
-        next_ = default
+        grouper = group.__class__()
+        
+        next_not = None
         for node in group:
-            if isinstance(node, self.Plus):
-                # +: put the next node in the required group
-                next_ = required
-            elif isinstance(node, self.Minus):
-                # -: put the next node in the banned group
-                next_ = banned
+            if isinstance(node, self.Minus):
+                # -: Replace with a NOT node
+                next_not = whoosh.qparser.syntax.NotGroup()
+                grouper.append(next_not)
+            elif next_not is not None:
+                next_not.append(node)
+                next_not = None
             else:
-                # Anything else: put it in the appropriate group
-                next_.append(node)
-                # Reset to putting things in the optional group by default
-                next_ = default
-
-        group = default
-        if required:
-            group = whoosh.qparser.syntax.AndMaybeGroup([required, group])
-        if banned:
-            group = whoosh.qparser.syntax.AndNotGroup([group, banned])
-        return group
+                grouper.append(node)
+        
+        return grouper
 
 
 DEFAULT_PLUGINS = (
@@ -200,7 +214,7 @@ DEFAULT_PLUGINS = (
                    whoosh.qparser.plugins.OperatorsPlugin(AndMaybe=None,
                                                           Require=None),
                    whoosh.qparser.plugins.EveryPlugin(),
-                   PlusMinusPlugin(),
+                   MinusPlugin(),
                    )
 
 
