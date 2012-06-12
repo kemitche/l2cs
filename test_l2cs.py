@@ -54,6 +54,12 @@ class l2csTester(unittest.TestCase):
         self._run_test("foo:bar NOT foo:baz", "(and (field foo 'bar') (not (field foo 'baz')))")
     def test_not4(self):
         self._run_test("bar AND foo:-baz", "(and (field text 'bar') (not (field text 'baz')))")
+    def test_not5(self):
+        '''Stray hyphens at the end should get ignored'''
+        self._run_test("foo:bar -", "(field foo 'bar')")
+    def test_not6(self):
+        '''Stray hyphens at the end should get ignored, even with spaces'''
+        self._run_test("foo:bar -  ", "(field foo 'bar')")
     
     # quotes
     def test_quote1(self):

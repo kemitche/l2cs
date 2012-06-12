@@ -9,14 +9,14 @@ into an Amazon CloudSearch boolean query
 
 import sys
 
-import whoosh.qparser
+import whoosh.qparser.default
 import whoosh.qparser.plugins
 import whoosh.qparser.syntax
 import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 
 HANDLERS = {}
@@ -200,6 +200,9 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
                 next_not = None
             else:
                 grouper.append(node)
+        if next_not is not None:
+            # Remove the empty NotGroup
+            grouper.pop()
         
         return grouper
 
@@ -220,7 +223,8 @@ DEFAULT_PLUGINS = (
 
 def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
                 int_fields=None, yesno_fields=None, aliases=None):
-    parser = whoosh.qparser.QueryParser(default_field, schema, plugins=plugins)
+    parser = whoosh.qparser.default.QueryParser(default_field, schema,
+                                                plugins=plugins)
     if int_fields:
         parser.add_plugin(IntNodePlugin(int_fields))
     if yesno_fields:
