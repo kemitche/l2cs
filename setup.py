@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='l2cs',
-    version="0.1.4",
+    version="1.0.1",
     author='Keith Mitchell',
     author_email='kemitche@reddit.com',
     description=("Rewrites queries from lucene syntax to"

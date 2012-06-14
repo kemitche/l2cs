@@ -16,7 +16,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "0.1.4"
+__version__ = "1.0.1"
 
 
 HANDLERS = {}
@@ -192,7 +192,9 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
         next_not = None
         for node in group:
             if isinstance(node, self.Minus):
-                # -: Replace with a NOT node
+                if next_not is not None:
+                    # Two minuses in a row; skip the second one
+                    continue
                 next_not = whoosh.qparser.syntax.NotGroup()
                 grouper.append(next_not)
             elif next_not is not None:

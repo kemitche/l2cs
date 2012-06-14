@@ -60,6 +60,9 @@ class l2csTester(unittest.TestCase):
     def test_not6(self):
         '''Stray hyphens at the end should get ignored, even with spaces'''
         self._run_test("foo:bar -  ", "(field foo 'bar')")
+    def test_not7(self):
+        '''Duplicate hyphens should be smooshed into one not clause'''
+        self._run_test("test -- foo", "(and (field text 'test') (not (field text 'foo')))")
     
     # quotes
     def test_quote1(self):
