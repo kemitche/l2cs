@@ -96,6 +96,10 @@ class l2csTester(unittest.TestCase):
         self._run_test("learn c++ programming", "(and (field text 'learn') (field text 'c++') (field text 'programming'))")
     def test_plus2(self):
         self._run_test("learn c++", "(and (field text 'learn') (field text 'c++'))")
+    
+    # Protect ourselves from bad syntax!
+    def test_minus_in_parentheses(self):
+        self._run_test("text:baz AND url:(-foo AND bar)", "(and (field text 'baz') (not (field url 'foo')) (field url 'bar'))")
 
 
 if __name__ == '__main__':

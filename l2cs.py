@@ -197,11 +197,15 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
                     continue
                 next_not = whoosh.qparser.syntax.NotGroup()
                 grouper.append(next_not)
-            elif next_not is not None:
-                next_not.append(node)
-                next_not = None
             else:
-                grouper.append(node)
+                # Nodes with children: search for nested Minus nodes
+                if isinstance(node, whoosh.qparser.syntax.GroupNode):
+                    node = self.do_minus(parser, node)
+                if next_not is not None:
+                    next_not.append(node)
+                    next_not = None
+                else:
+                    grouper.append(node)
         if next_not is not None:
             # Remove the empty NotGroup
             grouper.pop()
