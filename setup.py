@@ -8,7 +8,7 @@ except ImportError:
     from setuptools import setup
 
 import l2cs
-version = l2cs.__version__
+version = "1.0.2"
 
 setup(
     name='l2cs',
