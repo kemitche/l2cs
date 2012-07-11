@@ -9,6 +9,7 @@ into an Amazon CloudSearch boolean query
 
 import sys
 
+import whoosh.fields
 import whoosh.qparser.default
 import whoosh.qparser.plugins
 import whoosh.qparser.syntax
@@ -16,7 +17,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "1.0.8"
+__version__ = "2.0.0"
 
 
 HANDLERS = {}
@@ -234,8 +235,32 @@ DEFAULT_PLUGINS = (
 
 def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
                 int_fields=None, yesno_fields=None, aliases=None):
+    '''Helper function to create a QueryParser.
+    
+    Parameters:
+        default_field: the default field to search against for non-field
+                        queries
+        plugins: a list of plugins to use when parsing
+        schema: If provided, a schema to check fieldnames against. If not
+                provided, any query of the form "foo:bar" will yield searches
+                against the "foo" field; if provided and "foo" is not a field,
+                then the search will look for "foo bar" in the default_field.
+                NOTE: If provided, search queries MUST use unicode
+        int_fields: A list of fields that expect integer values from
+                    CloudSearch
+        yesno_fields: A list of fields to convert "yes" and "no" queries to
+                      boolean 1 / 0 searches
+        aliases: A dictionary of aliases to use for the AliasPlugin
+    
+    '''
     parser = whoosh.qparser.default.QueryParser(default_field, schema,
                                                 plugins=plugins)
+    parser_parse = parser.parse
+    def parse(text, *args, **kwargs):
+        assert isinstance(text, unicode), 'Cannot parse non-unicode objects (%r)' % text
+        return parser_parse(text, *args, **kwargs)
+    parser.parse = parse
+    parser.parse.__doc__ = parser_parse.__doc__
     if int_fields:
         parser.add_plugin(IntNodePlugin(int_fields))
     if yesno_fields:
@@ -245,26 +270,58 @@ def make_parser(default_field='text', plugins=DEFAULT_PLUGINS, schema=None,
     return parser
 
 
+def make_schema(fields, datefields=()):
+    '''Create a whoosh.fields.Schema object from a list of field names.
+    All fields will be set as TEXT fields. If datefields is supplied,
+    additionally create DATETIME fields with those names
+    
+    '''
+    fields = dict.fromkeys(fields, whoosh.fields.TEXT)
+    if datefields:
+        datefields = dict.fromkeys(datefields, whoosh.fields.DATETIME)
+        fields.update(datefields)
+    return whoosh.fields.Schema(**fields)
+
+
 def convert(query, parser):
     parsed = parser.parse(query)
     pieces = walk_clause(parsed)
-    return ''.join(pieces)
+    return u''.join(pieces)
 
 
-def __sample_parser():
+def __sample_parser(schema=None):
     return make_parser(int_fields=["count", "number"],
                        yesno_fields=["active", "ready"],
-                       aliases={"alias": ["alias1", "alias2"]})
+                       aliases={"alias": ["alias1", "alias2"]},
+                       schema=schema)
+
+
+def __sample_schema():
+    return make_schema(["foo", "bar", "baz", "count", "number", "active",
+                        "text", "ready", "active", "alias", "alias1",
+                        "alias2"])
 
 
 def main(args):
-    '''For command line experimentation'''
-    query = ' '.join(args[1:])
+    '''For command line experimentation. Sample output:
+    
+    $ python l2cs.py 'foo:bar AND baz:bork'
+    Lucene input: foo:bar AND baz:bork
+    Parsed representation: And([Term(u'foo', u'bar'), Term(u'baz', u'bork')])
+    Lucene form: (foo:bar AND baz:bork)
+    Cloudsearch form: (and (field foo 'bar') (field baz 'bork'))
+    
+    '''
+    args = [unicode(u, 'utf-8') for u in args[1:]]
+    schema = __sample_schema() if "--schema" in args else None
+    if schema:
+        args.pop(args.index("--schema"))
+    query = u' '.join(args)
     print "Lucene input:", query
-    parser = __sample_parser()
+    parser = __sample_parser(schema=schema)
     parsed = parser.parse(query)
     print "Parsed representation:", repr(parsed)
-    print "Lucene form:", str(parsed)
+    print "Lucene form:", unicode(parsed)
     cloudsearch_query = ''.join(walk_clause(parsed))
     print "Cloudsearch form:", cloudsearch_query
 
