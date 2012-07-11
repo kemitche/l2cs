@@ -26,14 +26,14 @@ setup(
     test_suite="test_l2cs",
 
     classifiers=[
-        'Classifier: Development Status :: 5 - Production/Stable',
-        'Classifier: Intended Audience :: Developers',
-        'Classifier: Intended Audience :: Information Technology',
-        'Classifier: License :: OSI Approved :: BSD License',
-        'Classifier: Programming Language :: Python :: 2.6',
-        'Classifier: Programming Language :: Python :: 2.7',
-        'Classifier: Topic :: Internet :: WWW/HTTP :: Indexing/Search',
-        'Classifier: Topic :: Software Development :: Libraries',
-        'Classifier: Topic :: Software Development :: Libraries :: Python Modules',
+        'Development Status :: 5 - Production/Stable',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Information Technology',
+        'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Libraries :: Python Modules',
     ],
 )
