@@ -171,7 +171,7 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
     class Minus(whoosh.qparser.syntax.MarkerNode):
         pass
     
-    def __init__(self, minusexpr="-"):
+    def __init__(self, minusexpr=r"(?=\B)-+(?=\w)"):
         self.minusexpr = minusexpr
 
     def taggers(self, parser):
@@ -193,7 +193,7 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
         for node in group:
             if isinstance(node, self.Minus):
                 if next_not is not None:
-                    # Two minuses in a row; skip the second one
+                    # Two Minuses in a row; skip the second one
                     continue
                 next_not = whoosh.qparser.syntax.NotGroup()
                 grouper.append(next_not)

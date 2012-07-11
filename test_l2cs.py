@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import os
 import unittest
 
 import l2cs
+
+DEBUG = bool(os.environ.get("L2CSDEBUG", ""))
 
 
 class l2csTester(unittest.TestCase):
@@ -16,10 +19,10 @@ class l2csTester(unittest.TestCase):
     
     def _run_test(self, input_, expected, parser=None):
         parser = parser or self.parser
-        parsed = parser.parse(input_)
+        parsed = parser.parse(input_, debug=DEBUG)
         pieces = l2cs.walk_clause(parsed)
         result = ''.join(pieces)
-        errmsg = ("\ninput: %s\nparsed: %s\nresult: %s\nexpected: %s" %
+        errmsg = ("\ninput: %s\nparsed: %r\nresult: %s\nexpected: %s" %
                   (input_, parsed, result, expected))
         self.assertEqual(result, expected, errmsg)
     
@@ -55,14 +58,20 @@ class l2csTester(unittest.TestCase):
     def test_not4(self):
         self._run_test("bar AND foo:-baz", "(and (field text 'bar') (not (field text 'baz')))")
     def test_not5(self):
-        '''Stray hyphens at the end should get ignored'''
-        self._run_test("foo:bar -", "(field foo 'bar')")
+        '''Stray hyphens at the end should not count as NOTs'''
+        self._run_test("foo:bar -", "(and (field foo 'bar') (field text '-'))")
     def test_not6(self):
-        '''Stray hyphens at the end should get ignored, even with spaces'''
-        self._run_test("foo:bar -  ", "(field foo 'bar')")
+        '''Stray hyphens at the end should not NOT, even with spaces'''
+        self._run_test("foo:bar -  ", "(and (field foo 'bar') (field text '-'))")
     def test_not7(self):
         '''Duplicate hyphens should be smooshed into one not clause'''
-        self._run_test("test -- foo", "(and (field text 'test') (not (field text 'foo')))")
+        self._run_test("test --foo", "(and (field text 'test') (not (field text 'foo')))")
+    def test_not8(self):
+        '''Duplicate hyphens hanging around in the middle of nowhere'''
+        self._run_test("test -- foo", "(and (field text 'test') (field text '--') (field text 'foo'))")
+    def test_not9(self):
+        '''Duplicate hyphens, spaced out'''
+        self._run_test("test - - foo", "(and (field text 'test') (field text '-') (field text 'foo'))")
     
     # quotes
     def test_quote1(self):
@@ -91,15 +100,20 @@ class l2csTester(unittest.TestCase):
         '''Make sure that referencing the base of the alias still works'''
         self._run_test("alias:foo", "(field alias 'foo')")
     
+    ### Test cases from resolved issues ###
+    # The remaining test cases protect against issues that have been resolved
+    
     # Unsupported "+" syntax gets ignored, AndMaybe clauses are avoided
     def test_plus1(self):
         self._run_test("learn c++ programming", "(and (field text 'learn') (field text 'c++') (field text 'programming'))")
     def test_plus2(self):
         self._run_test("learn c++", "(and (field text 'learn') (field text 'c++'))")
     
-    # Protect ourselves from bad syntax!
     def test_minus_in_parentheses(self):
         self._run_test("text:baz AND url:(-foo AND bar)", "(and (field text 'baz') (not (field url 'foo')) (field url 'bar'))")
+    
+    def test_minus_midword(self):
+        self._run_test("baz:foo-bar", "(field baz 'foo-bar')")
 
 
 if __name__ == '__main__':
