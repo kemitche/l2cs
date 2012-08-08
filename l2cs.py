@@ -16,7 +16,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "1.0.4"
+__version__ = "1.0.5"
 
 
 HANDLERS = {}
@@ -30,6 +30,12 @@ def handler(*classes):
             HANDLERS[cls] = fn
         return fn
     return decorator
+
+
+# NullQuery is an instance of _NullQuery class
+@handler(whoosh.query.NullQuery.__class__)
+def build_null(clause):
+    yield ""
 
 
 @handler(whoosh.query.Term, whoosh.query.Phrase, whoosh.query.Prefix)

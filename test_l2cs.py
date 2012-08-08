@@ -100,6 +100,14 @@ class l2csTester(unittest.TestCase):
         '''Make sure that referencing the base of the alias still works'''
         self._run_test("alias:foo", "(field alias 'foo')")
     
+    # NullQueries
+    def test_null1(self):
+        self._run_test('""', '')
+    def test_null2(self):
+        self._run_test('foo:""', '')
+    def test_null3(self):
+        self._run_test('foo:"" bar:baz', "(field bar 'baz')")
+    
     ### Test cases from resolved issues ###
     # The remaining test cases protect against issues that have been resolved
     

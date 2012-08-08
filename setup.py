@@ -7,7 +7,7 @@ except ImportError:
     use_setuptools()
     from setuptools import setup
 
-version = "1.0.4"
+version = "1.0.5"
 
 setup(
     name='l2cs',
