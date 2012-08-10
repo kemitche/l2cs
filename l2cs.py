@@ -16,7 +16,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "1.0.5"
+__version__ = "1.0.6"
 
 
 HANDLERS = {}
@@ -182,8 +182,7 @@ class MinusPlugin(whoosh.qparser.plugins.Plugin):
 
     def taggers(self, parser):
         minus_tagger = whoosh.qparser.taggers.FnTagger(self.minusexpr,
-                                                       self.Minus,
-                                                       "minus")
+                                                       self.Minus)
         return [(minus_tagger, 0)]
     
     def filters(self, parser):
