@@ -34,7 +34,7 @@ class l2csTester(unittest.TestCase):
     
     # phrases
     def test_phrases1(self):
-        self._run_test('"foo bar baz"', "(field text 'foo bar baz')")
+        self._run_test('"foo bar baz"', "(field text '\"foo bar baz\"')")
     
     # AND clauses
     def test_and1(self):
@@ -75,9 +75,12 @@ class l2csTester(unittest.TestCase):
     
     # quotes
     def test_quote1(self):
-        self._run_test("hello:\"goodbye you're sir\"", "(field hello 'goodbye you\\'re sir')")
+        self._run_test("hello:\"goodbye you're sir\"", "(field hello '\"goodbye you\\'re sir\"')")
     def test_quote2(self):
-        self._run_test("hello:\"goodbye you''re sir\"", "(field hello 'goodbye you\\'\\'re sir')")
+        self._run_test("hello:\"goodbye you''re sir\"", "(field hello '\"goodbye you\\'\\'re sir\"')")
+    def test_quote3(self):
+        '''Stray double-quotes get escaped'''
+        self._run_test('"foo bar" baz"', '(and (field text \'"foo bar"\') (field text \'baz\\"\'))')
     
     # int fields
     def test_int1(self):
