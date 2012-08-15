@@ -16,7 +16,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "1.0.7"
+__version__ = "1.0.8"
 
 
 HANDLERS = {}
@@ -38,10 +38,6 @@ def build_null(clause):
     yield ""
 
 
-def _fix_quotes(phrase):
-    return phrase.replace(r"'", r"\'").replace(r'"', r'\"')
-
-
 @handler(whoosh.query.Term, whoosh.query.Phrase, whoosh.query.Prefix)
 def build_field(clause):
     integer_field = getattr(clause, "integer_field", False)
@@ -50,17 +46,15 @@ def build_field(clause):
         yield clause.fieldname
         yield " '"
         if isinstance(clause, whoosh.query.Term):
-            yield _fix_quotes(clause.text)
+            yield clause.text.replace(r"'", r"\'")
         elif isinstance(clause, whoosh.query.Prefix):
-            yield _fix_quotes(clause.text)
+            yield clause.text.replace(r"'", r"\'")
             yield '*'
         elif isinstance(clause, whoosh.query.Phrase):
-            yield '"'
             for word in clause.words[:-1]:
-                yield _fix_quotes(word)
+                yield word.replace(r"'", r"\'")
                 yield " "
             yield clause.words[-1]
-            yield '"'
         yield "')"
     else:
         yield clause.fieldname
