@@ -155,6 +155,16 @@ class l2csTester(unittest.TestCase):
     
     def test_minus_midword(self):
         self._run_test(u"baz:foo-bar", u"(field baz 'foo-bar')")
+    
+    def test_unicode_intnodes1(self):
+        '''Clauses with integers should work with schemas
+        As reported in https://github.com/kemitche/l2cs/issues/18
+        
+        '''
+        try:
+            self._run_test(u"count:1", u"count:1", self.schema_parser)
+        except AssertionError as e:
+            self.fail(e)
 
 
 if __name__ == '__main__':

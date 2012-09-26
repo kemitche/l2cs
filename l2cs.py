@@ -17,7 +17,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "2.0.0"
+__version__ = "2.0.1"
 
 
 HANDLERS = {}
@@ -102,7 +102,7 @@ def walk_clause(clause):
 class IntNode(whoosh.qparser.syntax.WordNode):
     def __init__(self, value):
         self.__int_value = int(value)
-        whoosh.qparser.syntax.WordNode.__init__(self, str(self.__int_value))
+        whoosh.qparser.syntax.WordNode.__init__(self, unicode(self.__int_value))
     
     def query(self, parser):
         q = whoosh.qparser.syntax.WordNode.query(self, parser)
