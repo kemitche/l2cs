@@ -165,6 +165,9 @@ class l2csTester(unittest.TestCase):
             self._run_test(u"count:1", u"count:1", self.schema_parser)
         except AssertionError as e:
             self.fail(e)
+    
+    def test_intnode_empty1(self):
+        self._run_test(u"count:''", u"")
 
 
 if __name__ == '__main__':

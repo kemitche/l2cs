@@ -9,6 +9,7 @@ into an Amazon CloudSearch boolean query
 
 import sys
 
+import whoosh.analysis
 import whoosh.fields
 import whoosh.qparser.default
 import whoosh.qparser.plugins
@@ -17,7 +18,7 @@ import whoosh.qparser.taggers
 import whoosh.query
 
 
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 
 
 HANDLERS = {}
@@ -102,7 +103,7 @@ def walk_clause(clause):
 class IntNode(whoosh.qparser.syntax.WordNode):
     def __init__(self, value):
         self.__int_value = int(value)
-        whoosh.qparser.syntax.WordNode.__init__(self, unicode(self.__int_value))
+        whoosh.qparser.syntax.WordNode.__init__(self, value)
     
     def query(self, parser):
         q = whoosh.qparser.syntax.WordNode.query(self, parser)
@@ -144,10 +145,10 @@ class IntNodePlugin(PseudoFieldPlugin):
 class YesNoPlugin(PseudoFieldPlugin):
     def modify_node(self, fieldname, node):
         if node.has_text:
-            if node.text in ("yes", "y", "1"):
-                new_node = IntNode(1)
+            if node.text in (u"yes", u"y", u"1"):
+                new_node = IntNode(u'1')
             else:
-                new_node = IntNode(0)
+                new_node = IntNode(u'0')
             new_node.set_fieldname(fieldname)
             return new_node
         else:
@@ -276,11 +277,15 @@ def make_schema(fields, datefields=()):
     additionally create DATETIME fields with those names
     
     '''
-    fields = dict.fromkeys(fields, whoosh.fields.TEXT)
+    text_field = whoosh.fields.TEXT(analyzer=whoosh.analysis.SimpleAnalyzer())
+    fields = dict.fromkeys(fields, text_field)
     if datefields:
         datefields = dict.fromkeys(datefields, whoosh.fields.DATETIME)
         fields.update(datefields)
-    return whoosh.fields.Schema(**fields)
+    schema = whoosh.fields.Schema()
+    for fieldname in fields:
+        schema.add(fieldname, fields[fieldname])
+    return schema
 
 
 def convert(query, parser):
